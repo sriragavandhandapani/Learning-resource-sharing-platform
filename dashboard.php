@@ -1,14 +1,28 @@
 <?php
 require 'db.php';
 
-// Handle deletion (soft delete)
+// Handle file upload
+if (isset($_FILES['file'])) {
+    $filename = $_FILES['file']['name'];
+    $fileTmp = $_FILES['file']['tmp_name'];
+    $fileSize = $_FILES['file']['size'];
+
+    $uploadDir = 'uploads/';
+    $filePath = $uploadDir . basename($filename);
+
+    if (move_uploaded_file($fileTmp, $filePath)) {
+        $conn->query("INSERT INTO files (filename, size, uploaded_at) VALUES ('$filename', $fileSize, NOW())");
+    }
+}
+
+// Handle soft delete
 if (isset($_POST['delete'])) {
-  $id = (int)$_POST['id'];
-  $type = $_POST['type'];
-  $table = $type === 'file' ? 'files' : 'posts';
-  $conn->query("UPDATE $table SET deleted_at = NOW() WHERE id = $id");
-  header("Location: dashboard.php");
-  exit();
+    $id = (int)$_POST['id'];
+    $type = $_POST['type'];
+    $table = $type === 'file' ? 'files' : 'posts';
+    $conn->query("UPDATE $table SET deleted_at = NOW() WHERE id = $id");
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit();
 }
 
 // Fetch files
@@ -19,9 +33,9 @@ $files = $conn->query("SELECT * FROM files WHERE deleted_at IS NULL ORDER BY upl
 <html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
-  <title>Dashboard</title>
+  <title>File Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -32,58 +46,46 @@ $files = $conn->query("SELECT * FROM files WHERE deleted_at IS NULL ORDER BY upl
             secondary: '#ec4899',
           },
           fontFamily: {
-            japan: ['"Shippori Mincho B1"', 'serif'],
+            outfit: ['Outfit', 'sans-serif'],
           }
         }
       }
     }
   </script>
-  <style>
-    body { cursor: none; }
-    .cursor-dot {
-      position: fixed;
-      top: 0; left: 0;
-      width: 30px; height: 30px;
-      background-color: #f9dec9;
-      border-radius: 70%;
-      pointer-events: none;
-      transform: translate(-50%, -50%);
-      z-index: 9999;
-      transition: transform 0.05s ease-out, background-color 0.2s ease;
-    }
-    .cursor-dot::after {
-      content: ''; display: block;
-      width: 8px; height: 8px;
-      margin: auto;
-      background-color: #000;
-      border-radius: 50%;
-      position: relative;
-      top: 50%; transform: translateY(-50%);
-    }
-    .cursor-dot.transparent { background-color: transparent; }
-  </style>
 </head>
 
-<body class="bg-gray-900 text-white min-h-screen p-6">
+<body class="bg-gray-900 text-white min-h-screen font-outfit">
 
-  <!-- Cursor -->
-  <div class="cursor-dot" id="cursor-dot"></div>
-
-  <!-- Header -->
-  <header class="flex items-center justify-between mb-10">
-    <h1 class="text-4xl font-bold font-japan text-primary">📁 File Upload & Sharing</h1>
-    <div class="flex gap-2">
-      <a href="recyclebin.php" class="bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 transition">♻️ Recycle Bin</a>
-      <a href="login.html" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition">Signup</a>
-    </div>
+  <!-- Navbar -->
+  <header class="bg-[#2c2f48] px-6 py-4 shadow-md flex justify-between items-center sticky top-0 z-50">
+    <div class="text-xl font-bold text-white">📁 PeerConnect Files</div>
+    <nav>
+      <ul class="flex gap-6 text-md font-medium text-white">
+        <li><a href="AAindex.php" class="text-blue-400 font-semibold">Home</a></li>
+        <li><a href="about.php" class="hover:text-indigo-300 transition">About</a></li>
+        <li><a href="#" class="hover:text-indigo-300 transition">Review</a></li>
+        <li><a href="discussion.php" class="hover:text-indigo-300 transition">Discussion Area</a></li>
+        <li><a href="dashboard.php" class="hover:text-indigo-300 transition">Upload</a></li>
+        <li>
+          <a href="login1.php"
+             class="bg-indigo-600 mb-12 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-semibold transition">
+            Login
+          </a>
+        </li>
+      </ul>
+    </nav>
   </header>
 
-  <!-- Upload Section (Improved) -->
-  <section class="w-full max-w-3xl mx-auto mb-12 p-8 bg-gradient-to-br from-[#1e1e2f] to-[#2a2a40] rounded-2xl shadow-[0_0_25px_#6366f188] border border-indigo-500/30 backdrop-blur-md relative overflow-hidden">
-    <div class="absolute top-0 right-0 text-6xl text-indigo-400/10 pointer-events-none animate-pulse"></div>
-    <h2 class="text-3xl font-bold font-japan text-indigo-400 mb-6 flex items-center gap-2">📤 Upload Your Files</h2>
+  <!-- Upload Section -->
+  <section class="w-full max-w-3xl mx-auto mt-16 mb-12 p-8 bg-gradient-to-br from-[#1e1e2f] to-[#2a2a40] rounded-2xl shadow-[0_0_25px_#6366f188] border border-indigo-500/30 backdrop-blur-md relative overflow-hidden">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-3xl font-bold text-indigo-400 flex items-center gap-2">📤 Upload Your Files</h2>
+      <a href="recyclebin.php" class="text-sm font-semibold bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow transition-all">
+         Recycle Bin
+      </a>
+    </div>
     
-    <form action="upload.php" method="POST" enctype="multipart/form-data" class="space-y-5">
+    <form action="" method="POST" enctype="multipart/form-data" class="space-y-5">
       <div>
         <label class="block mb-2 font-semibold text-gray-300">Choose File</label>
         <input type="file" name="file" required
@@ -103,7 +105,7 @@ $files = $conn->query("SELECT * FROM files WHERE deleted_at IS NULL ORDER BY upl
       <?php $count = 0; while ($file = $files->fetch_assoc()): $count++; $hidden = $count > 4 ? 'hidden' : ''; ?>
         <li class="bg-gray-700 p-4 rounded-lg file-item <?= $hidden ?> flex justify-between items-start">
           <div>
-            <p class="font-medium"><?= $file['filename'] ?> (<?= round($file['size'] / 1024, 2) ?> KB)</p>
+            <p class="font-medium"><?= htmlspecialchars($file['filename']) ?> (<?= round($file['size'] / 1024, 2) ?> KB)</p>
             <a href="download.php?file=<?= $file['id'] ?>" class="text-blue-400 underline">Download</a>
           </div>
           <form method="POST">
@@ -119,7 +121,6 @@ $files = $conn->query("SELECT * FROM files WHERE deleted_at IS NULL ORDER BY upl
     <?php endif; ?>
   </section>
 
-  <!-- Scripts -->
   <script>
     const btn = document.getElementById('viewMoreBtn');
     if (btn) {
@@ -128,23 +129,6 @@ $files = $conn->query("SELECT * FROM files WHERE deleted_at IS NULL ORDER BY upl
         btn.style.display = 'none';
       });
     }
-
-    // Cursor follow
-    const cursor = document.getElementById("cursor-dot");
-    document.addEventListener("mousemove", (e) => {
-      cursor.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
-    });
-
-    // Transparent cursor over text & UI
-    const transparentTags = ['A', 'BUTTON', 'INPUT', 'TEXTAREA', 'LABEL', 'P', 'H1', 'H2', 'H3', 'SPAN'];
-    document.addEventListener("mouseover", (e) => {
-      if (transparentTags.includes(e.target.tagName)) {
-        cursor.classList.add("transparent");
-      }
-    });
-    document.addEventListener("mouseout", () => {
-      cursor.classList.remove("transparent");
-    });
   </script>
 
 </body>
