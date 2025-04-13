@@ -11,7 +11,7 @@ if (isset($_FILES['file'])) {
     $filePath = $uploadDir . basename($filename);
 
     if (move_uploaded_file($fileTmp, $filePath)) {
-        $conn->query("INSERT INTO files (filename, size, uploaded_at) VALUES ('$filename', $fileSize, NOW())");
+        $conn->query("INSERT INTO files (filename, size, path, uploaded_at) VALUES ('$filename', $fileSize, '$filePath', NOW())");
     }
 }
 
@@ -84,7 +84,7 @@ $files = $conn->query("SELECT * FROM files WHERE deleted_at IS NULL ORDER BY upl
          Recycle Bin
       </a>
     </div>
-    
+
     <form action="" method="POST" enctype="multipart/form-data" class="space-y-5">
       <div>
         <label class="block mb-2 font-semibold text-gray-300">Choose File</label>
@@ -106,7 +106,7 @@ $files = $conn->query("SELECT * FROM files WHERE deleted_at IS NULL ORDER BY upl
         <li class="bg-gray-700 p-4 rounded-lg file-item <?= $hidden ?> flex justify-between items-start">
           <div>
             <p class="font-medium"><?= htmlspecialchars($file['filename']) ?> (<?= round($file['size'] / 1024, 2) ?> KB)</p>
-            <a href="download.php?file=<?= $file['id'] ?>" class="text-blue-400 underline">Download</a>
+            <button class="text-blue-400 underline download-btn" data-url="<?= $file['path'] ?>" data-name="<?= $file['filename'] ?>">Download</button>
           </div>
           <form method="POST">
             <input type="hidden" name="id" value="<?= $file['id'] ?>">
@@ -122,6 +122,7 @@ $files = $conn->query("SELECT * FROM files WHERE deleted_at IS NULL ORDER BY upl
   </section>
 
   <script>
+    // View more toggle
     const btn = document.getElementById('viewMoreBtn');
     if (btn) {
       btn.addEventListener('click', () => {
@@ -129,6 +130,31 @@ $files = $conn->query("SELECT * FROM files WHERE deleted_at IS NULL ORDER BY upl
         btn.style.display = 'none';
       });
     }
+
+    // Handle file download via JavaScript
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.download-btn').forEach(button => {
+        button.addEventListener('click', async () => {
+          const fileUrl = button.getAttribute('data-url');
+          const fileName = button.getAttribute('data-name');
+
+          try {
+            const response = await fetch(fileUrl);
+            if (!response.ok) throw new Error("File not found");
+
+            const blob = await response.blob();
+            const downloadLink = document.createElement('a');
+            downloadLink.href = URL.createObjectURL(blob);
+            downloadLink.download = fileName;
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+          } catch (error) {
+            alert("❌ Error downloading file: " + error.message);
+          }
+        });
+      });
+    });
   </script>
 
 </body>
