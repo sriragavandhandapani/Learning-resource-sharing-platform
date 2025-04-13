@@ -63,7 +63,7 @@ $files = $conn->query("SELECT * FROM files WHERE deleted_at IS NULL ORDER BY upl
       <ul class="flex gap-6 text-md font-medium text-white">
         <li><a href="AAindex.php" class="text-blue-400 font-semibold">Home</a></li>
         <li><a href="about.php" class="hover:text-indigo-300 transition">About</a></li>
-        <li><a href="#" class="hover:text-indigo-300 transition">Review</a></li>
+        <li><a href="review.php" class="hover:text-indigo-300 transition">Review</a></li>
         <li><a href="discussion.php" class="hover:text-indigo-300 transition">Discussion Area</a></li>
         <li><a href="dashboard.php" class="hover:text-indigo-300 transition">Upload</a></li>
         <li>
