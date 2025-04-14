@@ -1,17 +1,27 @@
 <?php
 require 'db.php';
 
-// Handle file upload
-if (isset($_FILES['file'])) {
-    $filename = $_FILES['file']['name'];
-    $fileTmp = $_FILES['file']['tmp_name'];
-    $fileSize = $_FILES['file']['size'];
+// Handle file upload with passcode check
+if (isset($_FILES['file']) && isset($_POST['passcode'])) {
+    $enteredPasscode = $_POST['passcode'];
+    $correctPasscode = "file123"; // Change this to your desired passcode
 
-    $uploadDir = 'uploads/';
-    $filePath = $uploadDir . basename($filename);
+    if ($enteredPasscode !== $correctPasscode) {
+        echo "<script>alert('❌ Incorrect passcode! Upload denied.');</script>";
+    } else {
+        $filename = $_FILES['file']['name'];
+        $fileTmp = $_FILES['file']['tmp_name'];
+        $fileSize = $_FILES['file']['size'];
 
-    if (move_uploaded_file($fileTmp, $filePath)) {
-        $conn->query("INSERT INTO files (filename, size, path, uploaded_at) VALUES ('$filename', $fileSize, '$filePath', NOW())");
+        $uploadDir = 'uploads/';
+        $filePath = $uploadDir . basename($filename);
+
+        if (move_uploaded_file($fileTmp, $filePath)) {
+            $conn->query("INSERT INTO files (filename, size, path, uploaded_at) VALUES ('$filename', $fileSize, '$filePath', NOW())");
+           echo "<script>alert('✅ File uploaded successfully.');</script>";
+        } else {
+            echo "<script>alert('❌ Failed to upload file.');</script>";
+        }
     }
 }
 
@@ -33,7 +43,7 @@ $files = $conn->query("SELECT * FROM files WHERE deleted_at IS NULL ORDER BY upl
 <html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
-  <title>File Dashboard</title>
+  <title>PeerConnect Files</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
   <script>
@@ -42,11 +52,14 @@ $files = $conn->query("SELECT * FROM files WHERE deleted_at IS NULL ORDER BY upl
       theme: {
         extend: {
           colors: {
-            primary: '#6366f1',
-            secondary: '#ec4899',
+            primary: '#8b5cf6',
+            danger: '#ef4444',
           },
           fontFamily: {
             outfit: ['Outfit', 'sans-serif'],
+          },
+          boxShadow: {
+            glow: '0 0 20px #8b5cf6',
           }
         }
       }
@@ -54,64 +67,62 @@ $files = $conn->query("SELECT * FROM files WHERE deleted_at IS NULL ORDER BY upl
   </script>
 </head>
 
-<body class="bg-gray-900 text-white min-h-screen font-outfit">
+<body class="bg-gradient-to-br from-gray-900 to-black text-white font-outfit">
 
   <!-- Navbar -->
-  <header class="bg-[#2c2f48] px-6 py-4 shadow-md flex justify-between items-center sticky top-0 z-50">
-    <div class="text-xl font-bold text-white">📁 PeerConnect Files</div>
+  <header class="backdrop-blur-md bg-[#1f1f2e]/70 border-b border-indigo-500/20 px-6 py-4 shadow-lg flex justify-between items-center sticky top-0 z-50">
+    <div class="text-2xl font-bold text-indigo-400">📁 PeerConnect</div>
     <nav>
-      <ul class="flex gap-6 text-md font-medium text-white">
-        <li><a href="AAindex.php" class="text-blue-400 font-semibold">Home</a></li>
-        <li><a href="about.php" class="hover:text-indigo-300 transition">About</a></li>
-        <li><a href="review.php" class="hover:text-indigo-300 transition">Review</a></li>
-        <li><a href="discussion.php" class="hover:text-indigo-300 transition">Discussion Area</a></li>
-        <li><a href="dashboard.php" class="hover:text-indigo-300 transition">Upload</a></li>
-        <li>
-          <a href="login1.php"
-             class="bg-indigo-600 mb-12 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-semibold transition">
-            Login
-          </a>
-        </li>
+      <ul class="flex gap-6 text-sm font-medium">
+        <li><a href="AAindex.php" class="text-indigo-300 hover:text-white transition">Home</a></li>
+        <li><a href="about.php" class="hover:text-indigo-300">About</a></li>
+        <li><a href="review.php" class="hover:text-indigo-300">Review</a></li>
+        <li><a href="discussion.php" class="hover:text-indigo-300">Discussion</a></li>
+        <li><a href="dashboard.php" class="hover:text-indigo-300">Upload</a></li>
+        <li><a href="login1.php" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg transition font-semibold">Login</a></li>
       </ul>
     </nav>
   </header>
 
   <!-- Upload Section -->
-  <section class="w-full max-w-3xl mx-auto mt-16 mb-12 p-8 bg-gradient-to-br from-[#1e1e2f] to-[#2a2a40] rounded-2xl shadow-[0_0_25px_#6366f188] border border-indigo-500/30 backdrop-blur-md relative overflow-hidden">
+  <section class="w-full max-w-3xl mx-auto mt-16 mb-12 p-8 bg-white/5 border border-indigo-500/30 backdrop-blur-lg rounded-2xl shadow-glow relative overflow-hidden">
     <div class="flex justify-between items-center mb-6">
-      <h2 class="text-3xl font-bold text-indigo-400 flex items-center gap-2">📤 Upload Your Files</h2>
-      <a href="recyclebin.php" class="text-sm font-semibold bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow transition-all">
-         Recycle Bin
-      </a>
+      <h2 class="text-3xl font-bold text-indigo-400">📤 Upload Your Files</h2>
+      <a href="recyclebin.php" class="text-sm font-semibold bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow transition">🗑 Recycle Bin</a>
     </div>
-
     <form action="" method="POST" enctype="multipart/form-data" class="space-y-5">
+      
+      <!-- Passcode Field Added -->
       <div>
-        <label class="block mb-2 font-semibold text-gray-300">Choose File</label>
-        <input type="file" name="file" required
-               class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700 file:bg-indigo-600 file:text-white file:rounded file:px-4 file:py-2 file:border-none hover:file:bg-indigo-700 transition-all"/>
+        <label class="block mb-2 text-sm font-medium text-gray-300">Enter Passcode</label>
+        <input type="password" name="passcode" required placeholder="Enter passcode"
+               class="w-full bg-gray-900 text-white border border-gray-600 rounded-lg p-3" />
       </div>
-      <button type="submit"
-              class="w-full py-3 text-lg font-semibold bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-lg shadow-indigo-500/30 transition transform hover:scale-105">
+
+      <div>
+        <label class="block mb-2 text-sm font-medium text-gray-300">Choose File</label>
+        <input type="file" name="file" required class="w-full file:bg-indigo-600 file:text-white file:rounded file:px-4 file:py-2 bg-gray-900 text-white border border-gray-600 rounded-lg p-3 transition hover:file:bg-indigo-700" />
+      </div>
+      <button type="submit" class="w-full py-3 text-lg font-semibold bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-lg shadow-indigo-500/40 transition transform hover:scale-105">
         🚀 Upload Now
       </button>
     </form>
   </section>
 
   <!-- File List -->
-  <section class="bg-gray-800 p-6 rounded-xl shadow-lg max-w-4xl mx-auto">
-    <h2 class="text-2xl font-semibold mb-6 text-indigo-300">📁 Uploaded Files</h2>
+  <section class="max-w-4xl mx-auto bg-white/5 backdrop-blur-lg border border-indigo-400/20 p-6 rounded-xl ">
+    <h2 class="text-2xl font-semibold text-indigo-300 mb-6">📁 Uploaded Files</h2>
     <ul class="space-y-4" id="file-list">
       <?php $count = 0; while ($file = $files->fetch_assoc()): $count++; $hidden = $count > 4 ? 'hidden' : ''; ?>
-        <li class="bg-gray-700 p-4 rounded-lg file-item <?= $hidden ?> flex justify-between items-start">
+        <li class="bg-gray-800/80 border border-gray-600 p-4 rounded-lg file-item <?= $hidden ?> flex justify-between items-center shadow-md hover:shadow-indigo-600/40 transition">
           <div>
             <p class="font-medium"><?= htmlspecialchars($file['filename']) ?> (<?= round($file['size'] / 1024, 2) ?> KB)</p>
-            <button class="text-blue-400 underline download-btn" data-url="<?= $file['path'] ?>" data-name="<?= $file['filename'] ?>">Download</button>
+            <button class="text-indigo-400 underline download-btn" data-url="<?= $file['path'] ?>" data-name="<?= $file['filename'] ?>">Download</button>
           </div>
           <form method="POST">
             <input type="hidden" name="id" value="<?= $file['id'] ?>">
             <input type="hidden" name="type" value="file">
-            <button name="delete" class="ml-4 text-red-500 hover:text-red-700">🗑</button>
+            <button name="delete" class="text-red-500 hover:text-red-700 text-xl">🗑</button>
           </form>
         </li>
       <?php endwhile; ?>
@@ -122,7 +133,7 @@ $files = $conn->query("SELECT * FROM files WHERE deleted_at IS NULL ORDER BY upl
   </section>
 
   <script>
-    // View more toggle
+    // View More
     const btn = document.getElementById('viewMoreBtn');
     if (btn) {
       btn.addEventListener('click', () => {
@@ -131,13 +142,12 @@ $files = $conn->query("SELECT * FROM files WHERE deleted_at IS NULL ORDER BY upl
       });
     }
 
-    // Handle file download via JavaScript
+    // Download
     document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.download-btn').forEach(button => {
         button.addEventListener('click', async () => {
           const fileUrl = button.getAttribute('data-url');
           const fileName = button.getAttribute('data-name');
-
           try {
             const response = await fetch(fileUrl);
             if (!response.ok) throw new Error("File not found");
